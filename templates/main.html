@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Plotting Interface</title>
+    <link rel="icon" href="/static/Logo-HMU-EN-2.png" type="image/png">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding-top: 20px;
+        }
+        .logo {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            max-width: 200px;
+        }
+        .user-info {
+            position: absolute;
+            top: 20px;
+            left: 240px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .main-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 80px;
+            gap: 20px;
+        }
+        .upload-section, .plot-section {
+            width: 45%;
+            padding: 30px;
+            background-color: #ffffff;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .flash-message {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+        }
+        .form-inline {
+            display: flex;
+            align-items: center;
+        }
+        .file-input {
+            flex-grow: 1;
+        }
+        .upload-button {
+            margin-left: 10px;
+        }
+        #loading-bar {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <img src="/static/nano_hmu-3.png" alt="NANO@HMU Group Logo" class="logo">
+    <div class="user-info">User: {{ username }}</div>
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+        <div class="flash-message">
+            {% for message in messages %}
+                <div class="alert alert-success" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    {% endwith %}
+    <div class="main-container">
+        <div class="upload-section">
+            <h2>Upload Your Data File</h2>
+            <form action="/main" method="post" enctype="multipart/form-data" class="form-inline">
+                <div class="form-group file-input">
+                    <label for="file" class="sr-only">Upload TXT or CSV File:</label>
+                    <input type="file" class="form-control" name="file" id="file" required>
+                </div>
+                <button type="submit" class="btn btn-success upload-button">Upload File</button>
+            </form>
+            <h2 class="mt-4">Select Plotting Options</h2>
+            <form action="/main" method="post">
+                <div class="form-group">
+                    <label for="parameter">Select Parameter to Sort By:</label>
+                    <select class="form-control" name="parameter" id="parameter">
+                        <option value="ScanRate">Scan Rate</option>
+                        <option value="GateVoltageStart">Gate Voltage Settings</option>
+                        <option value="ChannelStart">Channel Settings</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" id="plot-button">Plot</button>
+            </form>
+        </div>
+        <div class="plot-section">
+            <h2>Plot Result</h2>
+            <div id="loading-bar">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/b/b1/Loading_icon.gif" alt="Loading...">
+                <p>Generating plot, please wait...</p>
+            </div>
+            <div id="plot-container">
+                {% if plot_url %}
+                    <img src="data:image/png;base64,{{ plot_url }}" alt="Plot" class="img-fluid">
+                    <a href="/download" class="btn btn-success btn-block mt-4">Download Plot as PNG</a>
+                {% else %}
+                    <p>No plot available. Please upload data and select plotting options.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>
