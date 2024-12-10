@@ -1,0 +1,29 @@
+## Header ##
+[General info]
+User	Giorgos_Psaltakis
+Device	dev1c4-PVSKofet-29-02-24
+Cell area (cm2)	1
+Test	Transistor Sweep
+Date	2024-06-18
+Time	15:42:38
+Temperature	24.95
+Note	
+
+[Gate Settings]
+Start (V)	0.000
+End (V)	0.000
+Step (V)	0.000
+
+[Channel Settings]
+Start (V)	-2.000
+End (V)	2.000
+Step (V)	0.025
+
+[Scan Settings]
+Delay Time (s)	5.000
+Scan Rate (mV/s)	100.000
+Include reverse	Yes
+Revert	No
+
+## Data ##
+1.37135E-3	2.08126E-8
