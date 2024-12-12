@@ -76,7 +76,7 @@ const FileAnalyzer = () => {
     const data: { time: number; dcVoltage: number; dcCurrent: number; pulseVoltage: number; pulseCurrent: number }[] = [];
     let metadata: { device?: string; date?: string; time?: string } = {};
     let startData = false;
-
+  
     for (const line of lines) {
       if (line.startsWith('Device\t')) metadata.device = line.split('\t')[1];
       if (line.startsWith('Date\t')) metadata.date = line.split('\t')[1];
@@ -99,7 +99,7 @@ const FileAnalyzer = () => {
         }
       }
     }
-
+  
     return { metadata, data };
   };
 
@@ -205,7 +205,7 @@ const FileAnalyzer = () => {
                 <YAxis 
                   label={{ value: 'Voltage (V)', angle: -90, position: 'insideLeft' }}
                 />
-                <Tooltip />
+                <Tooltip formatter={(value: any) => `${Number(value).toFixed(6)}`} />
                 <Legend />
                 <Line type="monotone" dataKey="dcVoltage" stroke="#8884d8" name="DC Voltage" />
                 <Line type="monotone" dataKey="pulseVoltage" stroke="#82ca9d" name="Pulse Voltage" />
@@ -222,9 +222,9 @@ const FileAnalyzer = () => {
                 />
                 <YAxis 
                   label={{ value: 'Current (A)', angle: -90, position: 'insideLeft' }}
-                  tickFormatter={val => val.toExponential(2)}
+                  tickFormatter={(val) => val.toExponential(2)}
                 />
-                <Tooltip formatter={(value: number) => value.toExponential(2)} />
+                <Tooltip formatter={(value: any) => `${Number(value).toExponential(2)}`} />
                 <Legend />
                 <Line type="monotone" dataKey="dcCurrent" stroke="#8884d8" name="DC Current" />
                 <Line type="monotone" dataKey="pulseCurrent" stroke="#82ca9d" name="Pulse Current" />
