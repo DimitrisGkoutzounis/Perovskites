@@ -2,9 +2,6 @@
 "use client"
 
 import React, { useState, useEffect, ChangeEvent } from 'react';
-// Rest of imports and code
-
-// import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -16,6 +13,8 @@ const FileAnalyzer = () => {
   const [files, setFiles] = useState<File[]>([]);
   const [availableModes, setAvailableModes] = useState<string[]>([]);
   const [plotsData, setPlotsData] = useState<any[]>([]);
+  const [deviceName, setDeviceName] = useState<string>('');
+
 
   const detectModes = (files: File[]) => {
     const modes = new Set<string>();
@@ -35,6 +34,13 @@ const FileAnalyzer = () => {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = Array.from(e.target.files as FileList);
     setFiles(fileList);
+  
+    // Extract device name from path
+    if (fileList.length > 0) {
+      const path = fileList[0].webkitRelativePath;
+      const deviceName = path.split('/')[0];
+      setDeviceName(deviceName);
+    }
     const detected = detectModes(fileList);
     setAvailableModes(detected);
     setSelectedMode('');
@@ -272,6 +278,9 @@ const FileAnalyzer = () => {
     <Card className="w-full max-w-6xl mx-auto p-6">
       <CardContent>
         <div className="space-y-6">
+        {deviceName && (
+         <h1 className="text-2xl font-bold text-center mb-6">Device: {deviceName}</h1>
+          )}
           <label className="flex flex-col items-center p-4 border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-50">
             <Upload className="w-8 h-8 mb-2 text-gray-500" />
             <span className="text-sm text-gray-500">Upload device folder</span>
@@ -288,7 +297,7 @@ const FileAnalyzer = () => {
               {availableModes.map((mode) => (
                 <Button
                   key={mode}
-                  className={`justify-start ${selectedMode === mode ? "bg-blue-500 text-white" : "bg-white text-blue-500 border border-blue-500"}`}
+                  className={`justify-start ${selectedMode === mode ? "bg-blue-500 text-black" : "bg-black text-blue-500 border border-blue-500"}`}
                   onClick={() => handleModeSelect(mode)}
                 >
                   <Activity className="w-4 h-4 mr-2" />
