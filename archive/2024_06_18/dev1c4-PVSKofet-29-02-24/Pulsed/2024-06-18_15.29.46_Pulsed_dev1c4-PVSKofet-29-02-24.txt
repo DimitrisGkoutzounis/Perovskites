@@ -1,0 +1,30 @@
+## Header ##
+[General info]
+User	Giorgos_Psaltakis
+Device	dev1c4-PVSKofet-29-02-24
+Cell area (cm2)	1
+Test	Pulsed
+Date	2024-06-18
+Time	15:29:46
+Temperature	24.90
+Note	
+
+[Acquisition Settings]
+Mode	Galvanostatic mode
+Gate Voltage Range	Normal (6V)
+Gate Current Range	1 mA
+Channel Voltage Range	Normal (6V)
+Channel Current Range	1 mA
+Sampling time (s)	1.00E-2
+Drain voltage (V)	0.5
+
+[Waveform Settings]
+1	Linear	0.000E+0	0.000E+0	0.000E+0	5.000E-1	1.000E+0
+2	Pulse	0.000E+0	5.000E-1	0.000E+0	1.000E+0	2.000E+0
+ 	 
+1	Off	1	Merge		Sum
+ 	 
+Cycles 	1
+
+## Data ##
+Time (s)	Voltage (V)	Current (A)

@@ -1,0 +1,29 @@
+## Header ##
+[General info]
+User	Spachis_Leandros
+Device	Dev3c4-PVSK-1.4M-29-02-2024
+Cell area (cm2)	1
+Test	Transistor Sweep
+Date	2024-07-29
+Time	14:54:42
+Temperature	25.00
+Note	
+
+[Gate Settings]
+Start (V)	0.000
+End (V)	0.000
+Step (V)	0.000
+
+[Channel Settings]
+Start (V)	0.000
+End (V)	2.000
+Step (V)	0.005
+
+[Scan Settings]
+Delay Time (s)	5.000
+Scan Rate (mV/s)	50.000
+Include reverse	Yes
+Revert	No
+
+## Data ##
+1.44610E-3	-6.98538E-9

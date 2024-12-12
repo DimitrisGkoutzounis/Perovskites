@@ -1,0 +1,40 @@
+## Header ##
+[General info]
+User	Giorgos_Psaltakis
+Device	Sample
+Cell area (cm2)	1
+Test	Memristor
+Date	2024-03-01
+Time	18:38:21
+Note	
+
+[Acquisition Settings]
+Sampling time (s)	5.000E+0
+Voltage Range (V)	6.000E+0
+Current Range (A)	1.000E-6
+Current Limit (A)	1.000E-6
+
+[Waveform Settings]
+V_HRS (V)	1.5000
+V_LRS (V)	1.5000
+V_READ (V)	0.0000
+t_HRS (s)	0.0500
+t_LRS (s)	0.0500
+t_READ (s)	0.0500
+d_HRS (s)	0.0100
+d_LRS (s)	0.0100
+d_READ (s)	0.0100
+Cycles	10
+
+## Data ##
+Time_HRS (s)	R_HRS (Ohm)	Time_LRS (s)	R_LRS (Ohm)
+7.00000E-2	-3.36964E+3	1.90000E-1	1.36228E+3
+3.10000E-1	7.42349E+2	4.30000E-1	5.21768E+2
+5.50000E-1	5.97104E+2	6.70000E-1	-4.26483E+2
+7.90000E-1	7.83245E+2	9.10000E-1	4.07673E+2
+1.03000E+0	1.10574E+3	1.15000E+0	-8.18343E+1
+1.27000E+0	-4.92377E+1	1.39000E+0	-6.97573E+1
+1.51000E+0	-6.55887E+2	1.63000E+0	-8.13102E+1
+1.75000E+0	3.33902E+2	1.87000E+0	-5.45820E+2
+1.99000E+0	-7.91662E+2	2.11000E+0	7.80693E+1
+2.23000E+0	3.87064E+2	2.35000E+0	4.00752E+1

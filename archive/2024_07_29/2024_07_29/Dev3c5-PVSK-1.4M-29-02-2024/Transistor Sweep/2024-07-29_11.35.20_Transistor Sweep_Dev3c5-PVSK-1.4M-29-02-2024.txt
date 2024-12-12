@@ -1,0 +1,50 @@
+## Header ##
+[General info]
+User	Spachis_Leandros
+Device	Dev3c5-PVSK-1.4M-29-02-2024
+Cell area (cm2)	1
+Test	Transistor Sweep
+Date	2024-07-29
+Time	11:35:20
+Temperature	25.00
+Note	
+
+[Gate Settings]
+Start (V)	0.000
+End (V)	0.000
+Step (V)	0.000
+
+[Channel Settings]
+Start (V)	0.000
+End (V)	2.000
+Step (V)	0.100
+
+[Scan Settings]
+Delay Time (s)	0.000
+Scan Rate (mV/s)	200.000
+Include reverse	No
+Revert	No
+
+## Data ##
+Vds	Ids (A)@Vg=0V
+-3.21315E-9	-3.10912E-7
+9.99954E-2	-2.80984E-7
+1.99995E-1	-2.53924E-7
+2.99995E-1	-2.30806E-7
+3.99995E-1	-2.12168E-7
+4.99995E-1	-1.93352E-7
+5.99995E-1	-1.77402E-7
+6.99995E-1	-1.63424E-7
+7.99995E-1	-1.52134E-7
+8.99995E-1	-1.45682E-7
+9.99995E-1	-1.42098E-7
+1.10000E+0	-1.37439E-7
+1.20000E+0	-1.28299E-7
+1.30000E+0	-1.13784E-7
+1.40000E+0	-1.00343E-7
+1.50000E+0	-8.40352E-8
+1.60000E+0	-6.53976E-8
+1.70000E+0	-4.80145E-8
+1.80000E+0	-3.18859E-8
+1.90000E+0	-1.89830E-8
+2.00000E+0	-3.75034E-9
