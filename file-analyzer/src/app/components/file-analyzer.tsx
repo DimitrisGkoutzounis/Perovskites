@@ -95,25 +95,33 @@ const FileAnalyzer = () => {
   const parsePulsedData = async (text: string, fileName: string) => {
     const lines = text.split('\n');
     const data: any[] = [];
-    let metadata = { device: fileName, date: '', time: '' };
+    let metadata = { device: '', date: '', time: '' };
+    let dataStarted = false;
     
     for (const line of lines) {
-      if (line.startsWith('Device')) metadata.device = line.split('\t')[1]?.trim() || fileName;
-      if (line.startsWith('Date')) metadata.date = line.split('\t')[1]?.trim() || '';
-      if (line.startsWith('Time')) metadata.time = line.split('\t')[1]?.trim() || '';
+      if (line.startsWith('Device')) metadata.device = line.split('\t')[1]?.trim();
+      if (line.startsWith('Date')) metadata.date = line.split('\t')[1]?.trim();
+      if (line.startsWith('Time')) metadata.time = line.split('\t')[1]?.trim();
       
-      const values = line.split('\t');
-      if (values.length >= 5 && !isNaN(Number(values[0]))) {
-        data.push({
-          time: parseFloat(values[0]),
-          dcVoltage: parseFloat(values[1]),
-          dcCurrent: parseFloat(values[2]),
-          pulseVoltage: parseFloat(values[3]),
-          pulseCurrent: parseFloat(values[4])
-        });
+      if (line.startsWith('## Data ##')) {
+        dataStarted = true;
+        continue;
+      }
+      
+      if (dataStarted && line.includes('\t')) {
+        const values = line.split('\t');
+        if (!line.startsWith('Time') && values.length === 3) {
+          data.push({
+            time: parseFloat(values[0]),
+            dcVoltage: parseFloat(values[1]),
+            dcCurrent: parseFloat(values[2]),
+            pulseVoltage: parseFloat(values[1]), // Same as DC for this file format
+            pulseCurrent: parseFloat(values[2])  // Same as DC for this file format
+          });
+        }
       }
     }
-    
+
     return validateData(data, fileName) ? { metadata, data } : null;
   };
 
