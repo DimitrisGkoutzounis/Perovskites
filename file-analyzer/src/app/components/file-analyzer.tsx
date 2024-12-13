@@ -5,8 +5,11 @@ import React, { useState, useEffect, ChangeEvent } from 'react';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Upload, Activity } from 'lucide-react';
+import { Upload, Activity, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import _ from 'lodash';
+
+const MIN_DATA_POINTS = 0;
 
 const FileAnalyzer = () => {
   const [selectedMode, setSelectedMode] = useState('');
@@ -14,6 +17,7 @@ const FileAnalyzer = () => {
   const [availableModes, setAvailableModes] = useState<string[]>([]);
   const [plotsData, setPlotsData] = useState<any[]>([]);
   const [deviceName, setDeviceName] = useState<string>('');
+  const [invalidFiles, setInvalidFiles] = useState<string[]>([]);
 
 
   const detectModes = (files: File[]) => {
@@ -54,10 +58,18 @@ const FileAnalyzer = () => {
     );
   };
 
-  const parseMemristorData = async (text: string) => {
+  const validateData = (data: any[], fileName: string) => {
+    if (!data || data.length < MIN_DATA_POINTS) {
+      setInvalidFiles(prev => [...prev, fileName]);
+      return false;
+    }
+    return true;
+  };
+
+  const parseMemristorData = async (text: string, fileName: string) => {
     const lines = text.split('\n');
     const data: { time: number; voltage: number; current: number }[] = [];
-    let metadata: { device?: string; date?: string; time?: string } = {};
+    let metadata = { device: '', date: '', time: '' };
 
     for (const line of lines) {
       if (line.startsWith('Device\t')) metadata.device = line.split('\t')[1];
@@ -66,53 +78,50 @@ const FileAnalyzer = () => {
       
       const values = line.split('\t');
       if (values.length === 3 && !isNaN(Number(values[0]))) {
-        data.push({
+        const point = {
           time: parseFloat(values[0]),
           voltage: parseFloat(values[1]),
           current: parseFloat(values[2])
-        });
-      }
-    }
-
-    return { metadata, data };
-  };
-
-  const parsePulsedData = async (text: string) => {
-    const lines = text.split('\n');
-    const data: { time: number; dcVoltage: number; dcCurrent: number; pulseVoltage: number; pulseCurrent: number }[] = [];
-    let metadata: { device?: string; date?: string; time?: string } = {};
-    let startData = false;
-  
-    for (const line of lines) {
-      if (line.startsWith('Device\t')) metadata.device = line.split('\t')[1];
-      if (line.startsWith('Date\t')) metadata.date = line.split('\t')[1];
-      if (line.startsWith('Time\t')) {
-        metadata.time = line.split('\t')[1];
-        startData = true;
-        continue;
-      }
-      
-      if (startData) {
-        const values = line.split('\t');
-        if (values.length >= 5 && !isNaN(Number(values[0]))) {
-          data.push({
-            time: parseFloat(values[0]) * 1000, // Convert to ms
-            dcVoltage: parseFloat(values[1]),
-            dcCurrent: parseFloat(values[2]),
-            pulseVoltage: parseFloat(values[3]),
-            pulseCurrent: parseFloat(values[4])
-          });
+        };
+        if (!isNaN(point.time) && !isNaN(point.voltage) && !isNaN(point.current)) {
+          data.push(point);
         }
       }
     }
-  
-    return { metadata, data };
+
+    return validateData(data, fileName) ? { metadata, data } : null;
   };
 
-  const parseTransistorData = async (text: string) => {
+  const parsePulsedData = async (text: string, fileName: string) => {
     const lines = text.split('\n');
-    const data: { vds: number; ids: number }[] = [];
-    let metadata: { device?: string; date?: string; time?: string } = {};
+    const data: any[] = [];
+    let metadata = { device: fileName, date: '', time: '' };
+    
+    for (const line of lines) {
+      if (line.startsWith('Device')) metadata.device = line.split('\t')[1]?.trim() || fileName;
+      if (line.startsWith('Date')) metadata.date = line.split('\t')[1]?.trim() || '';
+      if (line.startsWith('Time')) metadata.time = line.split('\t')[1]?.trim() || '';
+      
+      const values = line.split('\t');
+      if (values.length >= 5 && !isNaN(Number(values[0]))) {
+        data.push({
+          time: parseFloat(values[0]),
+          dcVoltage: parseFloat(values[1]),
+          dcCurrent: parseFloat(values[2]),
+          pulseVoltage: parseFloat(values[3]),
+          pulseCurrent: parseFloat(values[4])
+        });
+      }
+    }
+    
+    return validateData(data, fileName) ? { metadata, data } : null;
+  };
+
+
+  const parseTransistorData = async (text: string, fileName: string) => {
+    const lines = text.split('\n');
+    const data: any[] = [];
+    let metadata = { device: '', date: '', time: '' };
     let dataStarted = false;
 
     for (const line of lines) {
@@ -129,23 +138,27 @@ const FileAnalyzer = () => {
         if (line.startsWith('Vds')) continue;
         
         const values = line.split('\t');
-        if (values.length === 2 && !isNaN(Number(values[0]))) {
-          data.push({
+        if (values.length === 2) {
+          const point = {
             vds: parseFloat(values[0]),
             ids: parseFloat(values[1])
-          });
+          };
+          if (!Object.values(point).some(isNaN)) {
+            data.push(point);
+          }
         }
       }
     }
 
-    return { metadata, data: data.filter(d => !isNaN(Number(d.vds)) && !isNaN(Number(d.ids))) };
+    return validateData(data, fileName) ? { metadata, data } : null;
   };
 
   const handleModeSelect = async (mode: string) => {
     setSelectedMode(mode);
+    setInvalidFiles([]);
     const modeFiles = getModeFiles(mode);
     
-    const parser: { [key: string]: (text: string) => Promise<any> } = {
+    const parser: { [key: string]: (text: string, fileName: string) => Promise<any> } = {
       'Memristor': parseMemristorData,
       'Pulsed': parsePulsedData,
       'Transistor': parseTransistorData
@@ -153,15 +166,32 @@ const FileAnalyzer = () => {
 
     const selectedParser = parser[mode];
 
-    const plotsData = await Promise.all(
+    const results = await Promise.all(
       modeFiles.map(async file => {
-        const text = await (file as File).text();
-        return selectedParser(text);
+        const text = await file.text();
+        const parsed = await selectedParser(text, file.name);
+        console.log('Parsed data for file:', file.name, parsed);
+        return {
+          fileName: file.name,
+          data: parsed
+        };
       })
     );
+    
+    const plotsData = results.filter(result => result.data !== null).map(result => result.data);
+    console.log('Final plotsData:', plotsData);
 
     setPlotsData(plotsData);
   };
+
+  const dismissInvalidFiles = () => {
+    const validPlots = plotsData.filter(plot => 
+      !invalidFiles.includes(plot.metadata.device)
+    );
+    setPlotsData(validPlots);
+    setInvalidFiles([]);
+  };
+
 
   const renderPlot = (data: any, index: number) => {
     if (!selectedMode) return null;
@@ -281,6 +311,31 @@ const FileAnalyzer = () => {
         {deviceName && (
          <h1 className="text-2xl font-bold text-center mb-6">Device: {deviceName}</h1>
           )}
+
+            {invalidFiles.length > 0 && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Invalid or Corrupted Files Detected</AlertTitle>
+              <AlertDescription>
+                The following files contain insufficient or corrupted data:
+                <ul className="list-disc pl-6 mt-2">
+                  {invalidFiles.map(file => (
+                    <li key={file}>{file}</li>
+                  ))}
+                </ul>
+                <Button
+                  onClick={dismissInvalidFiles}
+                  className="mt-2 bg-red-600 hover:bg-red-700"
+                >
+                  Remove
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
+
+
+
           <label className="flex flex-col items-center p-4 border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-50">
             <Upload className="w-8 h-8 mb-2 text-gray-500" />
             <span className="text-sm text-gray-500">Upload device folder</span>
