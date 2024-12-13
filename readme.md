@@ -2,6 +2,12 @@
 
 A React-based web application for analyzing and visualizing electrical device measurement data.
 
+add image here
+![alt text](./uploads/select_device_folder.png)
+![alt text](./uploads/detected_modes.png)
+![alt text](./uploads/pulsed_mode_selected.png)
+
+
 ## Features
 
 - Support for multiple measurement modes (Memristor, Pulsed, Transistor)

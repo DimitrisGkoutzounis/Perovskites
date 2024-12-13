@@ -359,13 +359,14 @@ const FileAnalyzer = () => {
             <div className="grid grid-cols-3 gap-4">
               {availableModes.map((mode) => (
                 <Button
-                  key={mode}
-                  className={`justify-start ${selectedMode === mode ? "bg-blue-500 text-black" : "bg-black text-blue-500 border border-blue-500"}`}
-                  onClick={() => handleModeSelect(mode)}
-                >
-                  <Activity className="w-4 h-4 mr-2" />
-                  {mode} Mode
-                </Button>
+                key={mode}
+                data-state={selectedMode === mode ? 'selected' : undefined}
+                className="justify-start"
+                onClick={() => handleModeSelect(mode)}
+              >
+                <Activity className="w-4 h-4 mr-2" />
+                {mode} Mode
+              </Button>
               ))}
             </div>
           )}
