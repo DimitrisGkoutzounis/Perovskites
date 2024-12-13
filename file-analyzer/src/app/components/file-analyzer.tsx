@@ -9,7 +9,7 @@ import { Upload, Activity, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import _ from 'lodash';
 
-const MIN_DATA_POINTS = 0;
+const MIN_DATA_POINTS = 10;
 
 const FileAnalyzer = () => {
   const [selectedMode, setSelectedMode] = useState('');
@@ -18,6 +18,8 @@ const FileAnalyzer = () => {
   const [plotsData, setPlotsData] = useState<any[]>([]);
   const [deviceName, setDeviceName] = useState<string>('');
   const [invalidFiles, setInvalidFiles] = useState<string[]>([]);
+  const [showInvalidAlert, setShowInvalidAlert] = useState(true);
+
 
 
   const detectModes = (files: File[]) => {
@@ -193,11 +195,7 @@ const FileAnalyzer = () => {
   };
 
   const dismissInvalidFiles = () => {
-    const validPlots = plotsData.filter(plot => 
-      !invalidFiles.includes(plot.metadata.device)
-    );
-    setPlotsData(validPlots);
-    setInvalidFiles([]);
+    setShowInvalidAlert(false);
   };
 
 
@@ -320,26 +318,20 @@ const FileAnalyzer = () => {
          <h1 className="text-2xl font-bold text-center mb-6">Device: {deviceName}</h1>
           )}
 
-            {invalidFiles.length > 0 && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Invalid or Corrupted Files Detected</AlertTitle>
-              <AlertDescription>
-                The following files contain insufficient or corrupted data:
-                <ul className="list-disc pl-6 mt-2">
-                  {invalidFiles.map(file => (
-                    <li key={file}>{file}</li>
-                  ))}
-                </ul>
-                <Button
-                  onClick={dismissInvalidFiles}
-                  className="mt-2 bg-red-600 hover:bg-red-700"
-                >
-                  Remove
-                </Button>
-              </AlertDescription>
-            </Alert>
-          )}
+            {invalidFiles.length > 0 && showInvalidAlert && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Invalid or Corrupted Files Detected ({invalidFiles.length})</AlertTitle>
+                <AlertDescription>
+                  <Button
+                    onClick={dismissInvalidFiles}
+                    className="mt-2"
+                  >
+                    Hide Alert
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
 
 
 
