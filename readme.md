@@ -6,6 +6,7 @@ add image here
 ![alt text](./uploads/select_device_folder.png)
 ![alt text](./uploads/detected_modes.png)
 ![alt text](./uploads/pulsed_mode_selected.png)
+![alt text](./uploads/invalid_files_detected.png)
 
 
 ## Features
