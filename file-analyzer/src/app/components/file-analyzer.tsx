@@ -9,7 +9,8 @@ import { Upload, Activity, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import _ from 'lodash';
 
-const MIN_DATA_POINTS = 0;
+const MIN_DATA_POINTS = 5;
+
 
 const FileAnalyzer = () => {
   const [selectedMode, setSelectedMode] = useState('');
@@ -95,7 +96,7 @@ const FileAnalyzer = () => {
       }
     }
 
-    return validateData(data, fileName) ? { metadata, data } : null;
+    return validateData(data, fileName) ? { metadata, data, settings: parseAcquisitionSettings(text) } : null;
   };
 
   const parsePulsedData = async (text: string, fileName: string) => {
@@ -132,7 +133,7 @@ const FileAnalyzer = () => {
       }
     }
 
-    return validateData(data, fileName) ? { metadata, data } : null;
+    return validateData(data, fileName) ? { metadata, data, settings: parseAcquisitionSettings(text) } : null;
   };
 
 
@@ -142,60 +143,83 @@ const FileAnalyzer = () => {
     let metadata = { device: '', date: '', time: '' };
     let gateSettings: { [key: string]: string } = {};
     let channelSettings: { [key: string]: string } = {};
+    let scanSettings: { [key: string]: string } = {};
     let inGateSettings = false;
     let inChannelSettings = false;
+    let inScanSettings = false;
     let dataStarted = false;
   
     for (const line of lines) {
-      // Parse metadata
-      if (line.startsWith('Device\t')) metadata.device = line.split('\t')[1];
-      if (line.startsWith('Date\t')) metadata.date = line.split('\t')[1];
-      if (line.startsWith('Time\t')) metadata.time = line.split('\t')[1];
-      
-      // Parse settings
-      if (line.trim() === '[Gate Settings]') {
-        inGateSettings = true;
-        continue;
-      }
-      if (line.trim() === '[Channel Settings]') {
-        inGateSettings = false;
-        inChannelSettings = true;
-        continue;
-      }
-  
-      if (inGateSettings && line.includes('\t')) {
-        const [key, value] = line.split('\t').map(s => s.trim());
-        gateSettings[key] = value;
-      }
-      if (inChannelSettings && line.includes('\t')) {
-        const [key, value] = line.split('\t').map(s => s.trim());
-        channelSettings[key] = value;
-      }
-  
-      // Parse data
       if (line.startsWith('## Data ##')) {
         dataStarted = true;
         continue;
       }
-      
-      if (dataStarted && line.includes('\t') && !line.startsWith('Vds')) {
-        const values = line.split('\t');
-        const point = {
-          vds: parseFloat(values[0]),
-          ids: parseFloat(values[1])
-        };
-        if (!Object.values(point).some(isNaN)) {
-          data.push(point);
+  
+      if (!dataStarted) {
+        // Parse metadata and settings
+        if (line.startsWith('Device\t')) metadata.device = line.split('\t')[1];
+        if (line.startsWith('Date\t')) metadata.date = line.split('\t')[1];
+        if (line.startsWith('Time\t')) metadata.time = line.split('\t')[1];
+  
+        if (line.trim() === '[Gate Settings]') {
+          inGateSettings = true;
+          inChannelSettings = false;
+          inScanSettings = false;
+          continue;
+        }
+        if (line.trim() === '[Channel Settings]') {
+          inGateSettings = false;
+          inChannelSettings = true;
+          inScanSettings = false;
+          continue;
+        }
+        if (line.trim() === '[Scan Settings]') {
+          inGateSettings = false;
+          inChannelSettings = false; 
+          inScanSettings = true;
+          continue;
+        }
+  
+        if (inGateSettings && line.includes('\t')) {
+          const [key, value] = line.split('\t').map(s => s.trim());
+          gateSettings[key] = value;
+        }
+        if (inChannelSettings && line.includes('\t')) {
+          const [key, value] = line.split('\t').map(s => s.trim());
+          channelSettings[key] = value;
+        }
+        if (inScanSettings && line.includes('\t')) {
+          const [key, value] = line.split('\t').map(s => s.trim());
+          scanSettings[key] = value;
+        }
+      } else {
+        // Parse data
+        if (line.includes('\t') && !line.startsWith('Vds')) {
+          const values = line.split('\t');
+          const point = {
+            vds: parseFloat(values[0]),
+            ids: parseFloat(values[1])
+          };
+          if (!Object.values(point).some(isNaN)) {
+            data.push(point);
+          }
         }
       }
     }
   
+    const settings = {
+      ...gateSettings,
+      ...channelSettings,
+      ...scanSettings
+    };
+  
     return validateData(data, fileName) ? { 
       metadata, 
-      data, 
-      settings: { ...gateSettings, ...channelSettings } 
+      data,
+      settings
     } : null;
   };
+  
 
   const parseAcquisitionSettings = (text:string) => {
     const settings: { [key: string]: string } = {};
@@ -217,27 +241,42 @@ const FileAnalyzer = () => {
     }
     return settings;
   };
-
+  
   const handleModeSelect = async (mode: string) => {
     setSelectedMode(mode);
     setInvalidFiles([]);
     const modeFiles = getModeFiles(mode);
     
+
+    const parser = {
+      'Memristor': parseMemristorData,
+      'Pulsed': parsePulsedData,
+      'Transistor': parseTransistorData
+    };
+
+    const selectedParser = (parser as { [key: string]: typeof parseMemristorData })[mode];
+    
     // Parse settings from all files
     const allSettings = [];
-    for (const file of modeFiles) {
-      const text = await file.text();
-      const settings = parseAcquisitionSettings(text);
-      allSettings.push(settings);
-    }
+      for (const file of modeFiles) {
+        const text = await file.text();
+        const parsed = await selectedParser(text, file.name);
+        if (parsed) {
+          if (parsed.settings) {
+            allSettings.push(parsed.settings);
+          }
+  }
+}
 
-    const filters: { [key: string]: Set<string> } = {};
-    allSettings.forEach(settings => {
-      Object.entries(settings).forEach(([key, value]) => {
-        if (!filters[key]) filters[key] = new Set();
-        filters[key].add(value);
+      const filters: { [key: string]: Set<string> } = {};
+      allSettings.forEach(settings => {
+        Object.entries(settings).forEach(([key, value]) => {
+          if (typeof value === 'string') {
+            if (!filters[key]) filters[key] = new Set();
+            filters[key].add(value);
+          }
+        });
       });
-    });
 
      // Convert Sets to Arrays
     const availableFilters = Object.fromEntries(
@@ -245,23 +284,15 @@ const FileAnalyzer = () => {
     );
     setAvailableFilters(availableFilters);
     setSelectedFilters({});
-    
-    const parser: { [key: string]: (text: string, fileName: string) => Promise<any> } = {
-      'Memristor': parseMemristorData,
-      'Pulsed': parsePulsedData,
-      'Transistor': parseTransistorData
-    };
 
-    const selectedParser = parser[mode];
 
     const results = await Promise.all(
       modeFiles.map(async file => {
         const text = await file.text();
         const parsed = await selectedParser(text, file.name);
-        const settings = parseAcquisitionSettings(text);
         return {
           fileName: file.name,
-          data: parsed ? { ...parsed, settings } : null
+          data: parsed  
         };
       })
     );
@@ -281,12 +312,14 @@ const FileAnalyzer = () => {
   };
 
   const getFilteredPlots = () => {
-    return plotsData.filter(plot => {
-      return Object.entries(selectedFilters).every(([setting, value]) => 
-        !value || plot.settings[setting] === value
-      );
-    });
-  };
+  return plotsData.filter(plot => {
+    return Object.entries(selectedFilters).every(([setting, value]) => 
+      !value || 
+      (plot.settings && plot.settings[setting] === value)
+    );
+  });
+};
+  
 
 
   const renderPlot = (data: any, index: number) => {
@@ -450,36 +483,40 @@ const FileAnalyzer = () => {
             </div>
           )}
 
-          {Object.entries(availableFilters).length > 0 && (
-            <div className="flex flex-col gap-4">
-              <div className="grid grid-cols-2 gap-4">
-                {Object.entries(availableFilters).map(([setting, values]) => (
-                  <div key={setting} className="space-y-2">
-                    <h4 className="font-medium">{setting}</h4>
-                    <select 
-                      className="w-full p-2 border rounded"
-                      onChange={(e) => handleFilterChange(setting, e.target.value)}
-                      value={selectedFilters[setting] || ''}
-                    >
-                      <option value="">All</option>
-                      {values.map(value => (
-                        <option key={value} value={value}>{value}</option>
-                      ))}
-                    </select>
+          {selectedMode && (
+            <>
+              {Object.entries(availableFilters).length > 0 && (
+                <div className="flex flex-col gap-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    {Object.entries(availableFilters).map(([setting, values]) => (
+                      <div key={setting} className="space-y-2">
+                        <h4 className="font-medium">{setting}</h4>
+                        <select 
+                          className="w-full p-2 border rounded"
+                          onChange={(e) => handleFilterChange(setting, e.target.value)}
+                          value={selectedFilters[setting] || ''}
+                        >
+                          <option value="">All</option>
+                          {values.map(value => (
+                            <option key={value} value={value}>{value}</option>
+                          ))}
+                        </select>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-              <p className="text-center text-sm">Total plots to display: {getFilteredPlots().length}</p>
-              <Button
-                onClick={() => setShowPlots(true)}
-                className="w-full"
-              >
-                Show Plots
-              </Button>
-            </div>
+                  <p className="text-center text-sm">Total plots to display: {getFilteredPlots().length}</p>
+                  <Button
+                    onClick={() => setShowPlots(true)}
+                    className="w-full"
+                  >
+                    Show Plots
+                  </Button>
+                </div>
+              )}
+              
+              {showPlots && getFilteredPlots().map((data, index) => renderPlot(data, index))}
+            </>
           )}
-
-          {showPlots && getFilteredPlots().map((data, index) => renderPlot(data, index))}
 
       
         </div>
