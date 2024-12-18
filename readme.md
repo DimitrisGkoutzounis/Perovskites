@@ -25,8 +25,8 @@ add image here
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/device-data-analyzer.git
-cd device-data-analyzer
+git clone https://github.com/andreas-geo/Perovskites.git
+cd Perovskites/file-analyzer
 ```
 
 2. Install dependencies:
@@ -55,9 +55,12 @@ Navigate to `http://localhost:3000` in your browser.
 
 ## Usage
 
-1. Click "Upload device folder" to select a folder containing measurement data
-2. Choose a measurement mode (Memristor, Pulsed, or Transistor)
-3. View the generated plots and analysis
+1. Click "Upload device folder" to select a folder containing measurement data.
+2. Choose a measurement mode (Memristor, Pulsed, or Transistor).
+ - The application will automatically detect the available measurement modes.
+3. Select custom filter to apply for showing the plots.
+ - The application will automatically detect the available filters.
+4. View the generated plots and analysis
 
 ## File Structure Requirements
 
