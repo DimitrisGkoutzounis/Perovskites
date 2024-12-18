@@ -16,60 +16,68 @@ plot_buffer = None
 if not os.path.exists(directory_path):
     os.makedirs(directory_path)
 
+def extract_data_from_file(filepath):
+    with open(filepath, "r") as file:
+        lines = file.readlines()
+        Device = Date = Time = None
+        scan_rate = gate_start = None
+        data_start_index = None
 
-# Extract data from all txt files in the directory
-def extract_data_from_files(directory_path):
-    data = []
-    for filename in os.listdir(directory_path):
-        if filename.endswith('.txt'):
-            filepath = os.path.join(directory_path, filename)
-            with open(filepath, 'r') as file:
-                content = file.read()
+        for i, line in enumerate(lines):
+            if line.startswith("Device\t"):
+                Device = line.strip().split("\t")[1]
+            elif line.startswith("Date\t"):
+                Date = line.strip().split("\t")[1]  
+            elif line.startswith("Time\t"):
+                Time = line.strip().split("\t")[1]
+            elif "Scan Rate (mV/s)" in line:
+                                scan_rate = float(line.strip().split("\t")[1])
+            elif line.startswith("[Gate Settings]"):
+                gate_line = lines[i + 1]
+                matches = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", gate_line)
+                if matches:
+                    gate_start = float(matches[0])
+            elif line.startswith("## Data ##"):
+                col_titles_line = lines[i + 1].strip()
+                data_start_index = i + 2
+                break
 
-                # Extracting fields using regex
-                date_match = re.search(r"Date\s*:\s*(\d{4}-\d{2}-\d{2})", content)
-                time_match = re.search(r"Time\s*:\s*([\d:]+)", content)
-                device_match = re.search(r"Device\s*:\s*(\w+)", content)
-                scan_rate_match = re.search(r"Scan Rate\s*\(V/s\)\s*:\s*([\d.]+)", content)
-                gate_voltage_match = re.search(r"\[Gate Settings\]\s*Start \(V\)\s*:\s*([\d.]+)", content)
+        if data_start_index is None:
+            raise ValueError("Data section not found in the file.")
 
-                if date_match and time_match and device_match:
-                    date_str = date_match.group(1)
-                    time_str = time_match.group(1)
-                    datetime_str = f"{date_str} {time_str}"
-                    datetime_obj = datetime.strptime(datetime_str, "%Y-%m-%d %H:%M:%S")
+        col_titles = col_titles_line.split("\t")
+        data = []
+        for line in lines[data_start_index:]:
+            try:
+                data.append([float(x) for x in line.split("\t")])
+            except ValueError:
+                continue  # Skip invalid rows
 
-                    data_entry = {
-                        "Datetime": datetime_obj,
-                        "Device": device_match.group(1),
-                        "ScanRate": float(scan_rate_match.group(1)) if scan_rate_match else None,
-                        "GateVoltage": float(gate_voltage_match.group(1)) if gate_voltage_match else None
-                    }
-                    data.append(data_entry)
-
-    df = pd.DataFrame(data)
-    return df
-
-
+        df = pd.DataFrame(data, columns=col_titles)
+        return df, Device, Date, Time, scan_rate, gate_start
+      
 # Plotting the data
-def plot_data(df, parameter):
+def plot_data(df, parameter, Device, Date, Time, scan_rate):
     try:
-        if df.empty:
-            print("DataFrame is empty after sorting. No data to plot.")
-            return None, None
+        if parameter not in df.columns:
+            raise ValueError(f"Parameter '{parameter}' not found in the DataFrame columns.")
+        
+        fig, axes = plt.subplots(1, 2, figsize=(15, 5))
+        axes[0].set_title("Normal Graph")
+        axes[1].set_title("Log Graph")
+        
+        for col in df.columns[1:]:
+            axes[0].plot(df[df.columns[0]], df[col], label=col)
+            axes[1].semilogy(df[df.columns[0]], df[col].abs() + 1e-9, label=col)  # Avoid log(0)
 
-        df_sorted = df.sort_values(by=["Datetime", parameter])
+        for ax in axes:
+            ax.set_xlabel(df.columns[0])
+            ax.set_ylabel(parameter)
+            ax.legend()
+            ax.grid(True)
 
-        plt.figure(figsize=(12, 8))
-        plt.plot(df_sorted["Datetime"], df_sorted[parameter], marker='o', linestyle='-', color='b',
-                 label=f'{parameter} over Time')
-        plt.xticks(rotation=45)
-        plt.xlabel('Datetime')
-        plt.ylabel(parameter)
-        plt.title(f'{parameter} vs Time')
-        plt.legend()
-        plt.grid(True)
-        plt.tight_layout()
+        plt.suptitle(f"[{Device}] [{Date}] [{Time}] [Scan Rate: {scan_rate}]")
+        plt.tight_layout(rect=[0, 0.03, 1, 0.97])
 
         buf = BytesIO()
         plt.savefig(buf, format="png")
@@ -90,11 +98,10 @@ def index():
         return redirect(url_for('main_page', username=name))
     return render_template('index.html')
 
-
 @app.route('/main', methods=['GET', 'POST'])
 def main_page():
     global plot_buffer
-    plot_url = None
+    plot_url = None  
     username = request.args.get('username', 'User')
 
     if request.method == 'POST':
@@ -106,22 +113,30 @@ def main_page():
                 flash(f'File "{file.filename}" uploaded successfully and ready for plotting.', 'info')
         elif 'parameter' in request.form:
             parameter = request.form['parameter']
-            df = extract_data_from_files(directory_path)
+            
+            for filename in os.listdir(directory_path):
+                if filename.endswith('.txt'):
+                    filepath = os.path.join(directory_path, filename)
+                    
+                    try:
+                        df, Device, Date, Time, scan_rate, gate_start = extract_data_from_file(filepath)
 
-            if df.empty:
-                flash('No data found after extraction. Please upload valid data files.', 'danger')
-                return render_template('main.html', plot_url=plot_url, username=username)
+                    except Exception as e:
+                        flash(f'Error extracting data from file "{filename}". Please check the file format.', 'danger')
+                        return render_template('main.html', plot_url=plot_url, username=username)
+                    
+                    if parameter not in df.columns:
+                        flash(f'Parameter "{parameter}" is not available in the uploaded file "{filename}". Available parameters: {", ".join(df.columns)}', 'danger')
+                        return render_template('main.html', plot_url=plot_url, username=username)
 
-            if parameter not in df.columns or df[parameter].isnull().all():
-                flash(f'Parameter "{parameter}" is not available or has no valid data in the uploaded files.', 'danger')
-                return render_template('main.html', plot_url=plot_url, username=username)
-
-            plot_url, plot_buffer = plot_data(df, parameter)
-            if plot_url:
-                flash('Plot generated successfully.', 'success')
-            else:
-                flash('An error occurred while generating the plot. Please check the logs.', 'danger')
-
+                    
+                    plot_url, plot_buffer = plot_data(df, parameter, Device, Date, Time, scan_rate)
+                    
+                    if plot_url:
+                        flash(f'Plot for file "{filename}" generated successfully.', 'success')
+                    else:
+                        flash(f'An error occurred while generating the plot for file "{filename}". Please check the logs.', 'danger')
+    
     return render_template('main.html', plot_url=plot_url, username=username)
 
 
@@ -129,10 +144,10 @@ def main_page():
 def download_plot():
     global plot_buffer
     if plot_buffer:
-        return send_file(BytesIO(plot_buffer.getvalue()), as_attachment=True, attachment_filename='plot.png',
+        return send_file(BytesIO(plot_buffer.getvalue()), as_attachment=True, attachment_filename='plot.png', 
                          mimetype='image/png')
     else:
-        flash('No plot available for download.', 'danger')
+        flash('No plot available for download.', 'danger')  
         return redirect(url_for('main_page'))
 
 
