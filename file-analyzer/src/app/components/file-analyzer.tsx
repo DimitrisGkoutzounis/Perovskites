@@ -11,7 +11,7 @@ import _ from 'lodash';
 
 const MIN_DATA_POINTS = 5;
 
-
+  
 const FileAnalyzer = () => {
   const [selectedMode, setSelectedMode] = useState('');
   const [files, setFiles] = useState<File[]>([]);
