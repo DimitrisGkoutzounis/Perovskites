@@ -11,10 +11,10 @@ add image here
 
 ## Features
 
-- Support for multiple measurement modes (Memristor, Pulsed, Transistor)
-- Real-time data visualization
+- Autodetect available measurment modes, i.e., Memristor, Pulsed, Transistor
+- Autodetect available filters to apply
 - Automatic file validation and error detection
-- Interactive plots with zoom and pan capabilities
+- Interactive plots with hover axis capabilities
 
 ## Prerequisites
 
