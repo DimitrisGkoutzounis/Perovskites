@@ -60,7 +60,7 @@ Navigate to `http://localhost:3000` in your browser.
  - The application will automatically detect the available measurement modes.
 3. Select custom filter to apply for showing the plots.
  - The application will automatically detect the available filters.
-4. View the generated plots and analysis
+4. View the plots.
 
 ## File Structure Requirements
 
